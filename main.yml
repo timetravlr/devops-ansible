@@ -1,5 +1,98 @@
 ---
 - hosts: all
+  vars: 
+    APP_MESSAGE: "HELLO WORLD"
   tasks:
     - debug:
         msg: Hello, world
+    
+    - name: Install docker
+      ansible.builtin.yum:
+        name: docker
+        state: present
+        
+    - name: Copy myapp service script
+      ansible.builtin.copy:
+        src: myapp.service
+        dest: /etc/systemd/system/
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Enable myapp service with systemd
+      ansible.builtin.systemd:
+        name: myapp.service
+        enabled: yes
+        daemon_reload: yes 
+
+    - name: Display message about docker starting
+      debug: msg="Waiting for docker to start..."
+
+    - name: Start docker service
+      service:
+        name: docker
+        state: started
+      register: start_docker_service
+      #until: start_docker_service.status.ActiveState == "active"
+
+    - name: Get service_facts for docker
+      ansible.builtin.service_facts:
+      register: get_facts
+      until: ansible_facts.services.docker.state == "running"
+      retries: 5
+      delay: 1
+
+     
+    # Goal: While status of docker is not yet alive, keep checking status
+    - name: Check docker status
+      ansible.builtin.command: "systemctl status docker"
+      when: start_docker_service is succeeded
+      register: docker_status
+
+    - name: Create folder /tmp/build_app
+      ansible.builtin.file:
+         path: /tmp/build_app
+         state: directory
+         mode: 0755
+      tags: create_buildapp_folder
+
+    - name: Copy app files into /tmp/build_app
+      ansible.builtin.copy:
+         src: vagrant/app
+         dest: /tmp/build_app
+         #recurse: yes
+
+    - name: Replace APP_MESSAGE in main.py script
+      ansible.builtin.lineinfile:
+        path: /tmp/build_app/app/main.py
+        regexp: '^APP_MESSAGE'
+        line: '{{ APP_MESSAGE }}'
+      tags: update_py_script
+
+    - name: Copy Dockerfile to /tmp/build_app
+      ansible.builtin.copy:
+        src: ./Dockerfile
+        dest: /tmp/build_app/Dockerfile
+        owner: root
+        mode: 0644
+
+    - name: Build the docker app
+      docker_image:
+        name: myapp
+        build:
+          path: /tmp/build_app/app
+          source: build
+        state: present   
+      #old way: ansible.builtin.command: "docker build -t myapp ."    
+    
+    - name: Start the app
+      ansible.builtin.service:
+        name: myapp
+        state: started
+      register: app_start
+
+    - name: Check status of app
+      debug: msg="App status is  {{ app_start }}""
+      register: check_myapp
+      when: app_start is succeeded
+    
