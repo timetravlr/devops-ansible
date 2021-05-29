@@ -1,5 +1,7 @@
 ---
 - hosts: all
+  become_user: root
+  become: yes
   vars: 
     APP_MESSAGE: "HELLO WORLD"
   tasks:
@@ -10,6 +12,7 @@
       ansible.builtin.yum:
         name: docker
         state: present
+      become: yes
         
     - name: Copy myapp service script
       ansible.builtin.copy:
@@ -77,12 +80,12 @@
         mode: 0644
 
     - name: Build the docker app
-      ansible.builtin.docker_image:
+      docker_image:
         name: myapp
         build:
           path: /tmp/build_app
-          source: dockerfile
-        state: present
+        source: build
+        
       #ansible.builtin.command: "docker build -t myapp ."
       #args:
       #    path: /tmp/build_app/
