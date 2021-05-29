@@ -8,7 +8,7 @@
     - debug:
         msg: Hello, world
     
-    - name: Install docker
+    - name: Install docker and python-docker-py
       ansible.builtin.yum:
         name: ['docker','python-docker-py']
         state: present
@@ -48,7 +48,7 @@
      
     # Goal: While status of docker is not yet alive, keep checking status
     - name: Check docker status
-      ansible.builtin.command: "systemctl status docker"
+      ansible.builtin.command: "systemctl status --quiet docker"
       when: start_docker_service is succeeded
       register: docker_status
 
@@ -69,7 +69,7 @@
       ansible.builtin.lineinfile:
         path: /tmp/build_app/main.py
         regexp: 'APP_MESSAGE'
-        line: '{{ APP_MESSAGE }}'
+        line: '     return "{{ APP_MESSAGE }}"'
       tags: update_py_script
 
     - name: Copy Dockerfile to /tmp/build_app
