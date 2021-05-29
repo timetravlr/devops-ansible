@@ -10,9 +10,9 @@
     
     - name: Install docker
       ansible.builtin.yum:
-        name: docker
+        name: ['docker','python-docker-py']
         state: present
-      become: yes
+     
         
     - name: Copy myapp service script
       ansible.builtin.copy:
@@ -63,12 +63,12 @@
       ansible.builtin.copy:
          src: app/
          dest: /tmp/build_app/
-         #recurse: yes
+         
 
     - name: Replace APP_MESSAGE in main.py script
       ansible.builtin.lineinfile:
         path: /tmp/build_app/main.py
-        regexp: '^APP_MESSAGE'
+        regexp: 'APP_MESSAGE'
         line: '{{ APP_MESSAGE }}'
       tags: update_py_script
 
