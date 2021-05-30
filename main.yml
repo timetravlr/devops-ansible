@@ -66,10 +66,10 @@
          
 
     - name: Replace APP_MESSAGE in main.py script
-      ansible.builtin.lineinfile:
+      ansible.builtin.replace:
         path: /tmp/build_app/main.py
         regexp: 'APP_MESSAGE'
-        line: '     return "{{ APP_MESSAGE }}"'
+        replace: '"{{ APP_MESSAGE }}"'
       tags: update_py_script
 
     - name: Copy Dockerfile to /tmp/build_app
@@ -86,10 +86,6 @@
           path: /tmp/build_app
         source: build
         
-      #ansible.builtin.command: "docker build -t myapp ."
-      #args:
-      #    path: /tmp/build_app/
-       
     - name: Start the app
       ansible.builtin.service:
         name: myapp
