@@ -53,14 +53,14 @@
     - name: Display message about docker starting
       debug: msg="Waiting for docker to start..."
     
-    - name: Wait for docker service to be confirmed
-      command: "systemctl status --quiet docker"
+    - name: Show a progress hashmark until service is up
+      ansible.builtin.command: 'systemctl status --quiet docker'
+      #; echo -n "#"'
       register: check_docker_service
+      #until: "'running' in check_docker_service" 
       until: check_docker_service is succeeded
 
-   
-      
-
+  
     - name: Create folder /tmp/build_app
       ansible.builtin.file:
          path: /tmp/build_app
@@ -105,4 +105,13 @@
       command: "systemctl status --quiet myapp"
       register: check_myapp
       when: app_start is succeeded
+
+    - name: Test the app with curl to port 8000
+      ansible.builtin.uri:
+        url: http://localhost:8000
+      register: check_uri
+
+    - name: Show success if app responds
+      debug: msg="App is working on port 8000"
+      when: check_uri is succeeded        
     
