@@ -53,11 +53,21 @@
     - name: Display message about docker starting
       debug: msg="Waiting for docker to start..."
     
-    - name: Wait until docker status is running
-      ansible.builtin.command: 'systemctl status --quiet docker'
-      register: check_docker_service
-      #until: "'running' in check_docker_service" 
-      until: check_docker_service is succeeded
+   ## One way to check docker status:
+   # - name: Wait until docker status is running
+   #   ansible.builtin.command: 'systemctl status --quiet docker'
+   #   register: check_docker_service
+   #   #until: "'running' in check_docker_service" 
+   #   until: check_docker_service is succeeded
+
+    - name: Wait for docker service
+      service:
+        name: docker
+        state: started
+      register: docker_service
+      until: docker_service.status.ActiveState == "active"
+      retries: 2
+      delay: 1  
 
   
     - name: Create folder /tmp/build_app
@@ -77,7 +87,7 @@
       ansible.builtin.replace:
         path: /tmp/build_app/main.py
         regexp: 'APP_MESSAGE'
-        replace: '"{{ APP_MESSAGE }}"'
+        replace: '{{ APP_MESSAGE }}'
       tags: update_py_script
 
     - name: Copy Dockerfile to /tmp/build_app
