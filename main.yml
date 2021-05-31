@@ -37,7 +37,7 @@
       #until: start_docker_service.status.ActiveState == "active"
     
 
-# Another way, but does not seem to get updated facts after it runs once
+# Another way: using service_facts, but does not seem to get updated facts after it runs once
 #   - name: Get service_facts
 #     ansible.builtin.service_facts:
 #     register: get_facts
@@ -53,9 +53,8 @@
     - name: Display message about docker starting
       debug: msg="Waiting for docker to start..."
     
-    - name: Show a progress hashmark until service is up
+    - name: Wait until docker status is running
       ansible.builtin.command: 'systemctl status --quiet docker'
-      #; echo -n "#"'
       register: check_docker_service
       #until: "'running' in check_docker_service" 
       until: check_docker_service is succeeded
@@ -106,12 +105,19 @@
       register: check_myapp
       when: app_start is succeeded
 
+  # Might have needed to define an selinux context here
+
     - name: Test the app with curl to port 8000
       ansible.builtin.uri:
         url: http://localhost:8000
       register: check_uri
 
     - name: Show success if app responds
-      debug: msg="App is working on port 8000"
-      when: check_uri is succeeded        
+      debug: msg="App is working on port 8000, it works!  {{ check_uri }}"
+      when: check_uri is succeeded
+
+    - name: Show fail if app does not respond
+      debug: msg="App is not responding on port 8000"
+      when: check_uri is failed     
+
     
