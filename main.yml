@@ -28,36 +28,15 @@
         enabled: yes
         daemon_reload: yes 
 
-
-    - name: Start docker service
-      service:
-        name: docker
-        state: started
-      register: start_docker_service
-      #until: start_docker_service.status.ActiveState == "active"
-    
-
-# Another way: using service_facts, but does not seem to get updated facts after it runs once
-#   - name: Get service_facts
-#     ansible.builtin.service_facts:
-#     register: get_facts
-#
-#   - name: Display fact for docker service status
-#     debug:
-#       var: ansible_facts.services["docker.service"]  
-#     until: '"running" in ansible_facts.services["docker.service"]'
-#     retries: 1
-#      delay: 1
   
     # Goal: While status of docker is not yet alive, keep checking status
     - name: Display message about docker starting
       debug: msg="Waiting for docker to start..."
     
-   ## One way to check docker status:
+   ## Another way to check docker status, but we will prefer the service module
    # - name: Wait until docker status is running
    #   ansible.builtin.command: 'systemctl status --quiet docker'
    #   register: check_docker_service
-   #   #until: "'running' in check_docker_service" 
    #   until: check_docker_service is succeeded
 
     - name: Wait for docker service
@@ -125,6 +104,7 @@
     - name: Show success if app responds
       debug: msg="App is working on port 8000, it works!  {{ check_uri }}"
       when: check_uri is succeeded
+      ignore_errors: true
 
     - name: Show fail if app does not respond
       debug: msg="App is not responding on port 8000"
